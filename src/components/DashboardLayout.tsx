@@ -1,7 +1,7 @@
 
 import { ReactNode, useState } from 'react';
-import Header from './Header';
-import Footer from './Footer';
+import DashboardNavbar from './DashboardNavbar';
+import DashboardFooter from './DashboardFooter';
 import DashboardSidebar from './DashboardSidebar';
 import { Menu } from 'lucide-react';
 import { Button } from './ui/button';
@@ -17,8 +17,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
-      <div className="flex flex-1">
+      <DashboardNavbar />
+      <div className="flex flex-1 pt-16"> {/* Added pt-16 to account for fixed navbar */}
         {isMobile ? (
           <>
             <div className={`fixed inset-0 bg-black/30 z-40 transition-opacity duration-300 ease-in-out ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
@@ -41,13 +41,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <DashboardSidebar />
         )}
         
-        <main className="flex-1 p-4 md:p-6 bg-background">
+        <main className="flex-1 p-4 md:p-6 bg-background md:ml-64">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
         </main>
       </div>
-      <Footer />
+      <DashboardFooter />
     </div>
   );
 };
