@@ -3,8 +3,6 @@ import { ReactNode, useState } from 'react';
 import DashboardNavbar from './DashboardNavbar';
 import DashboardFooter from './DashboardFooter';
 import DashboardSidebar from './DashboardSidebar';
-import { Menu } from 'lucide-react';
-import { Button } from './ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DashboardLayoutProps {
@@ -17,7 +15,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   
   return (
     <div className="flex flex-col min-h-screen">
-      <DashboardNavbar />
+      <DashboardNavbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       <div className="flex flex-1 pt-16"> {/* Added pt-16 to account for fixed navbar */}
         {isMobile ? (
           <>
@@ -27,15 +25,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div className={`fixed top-0 left-0 h-full z-50 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
               <DashboardSidebar onClose={() => setSidebarOpen(false)} />
             </div>
-            
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="fixed left-4 top-16 z-30 bg-primary text-white rounded-full shadow-lg md:hidden"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
           </>
         ) : (
           <DashboardSidebar />
