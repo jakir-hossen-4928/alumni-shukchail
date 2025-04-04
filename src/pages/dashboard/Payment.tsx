@@ -52,7 +52,14 @@ const Payment = () => {
     
     try {
       setLoading(true);
-      const result = await submitPayment(currentUser.uid, data);
+      // Ensure data is fully conforming to PaymentFormData type
+      const paymentData: PaymentFormData = {
+        amount: data.amount,
+        paymentMethod: data.paymentMethod,
+        paymentNumber: data.paymentNumber,
+        transactionId: data.transactionId
+      };
+      const result = await submitPayment(currentUser.uid, paymentData);
       if (result) {
         toast.success('পেমেন্ট সাবমিট হয়েছে! অ্যাডমিন দ্বারা যাচাইয়ের জন্য অনুরোধ করা হচ্ছে।');
         navigate('/dashboard');

@@ -71,7 +71,17 @@ const Profile = () => {
       // Pre-populate the form with user data if available
       Object.keys(userData).forEach(key => {
         if (form.getValues()[key as keyof ProfileFormValues] !== undefined) {
-          form.setValue(key as keyof ProfileFormValues, userData[key as keyof UserData] || '');
+          // Convert dates to strings if necessary
+          const value = userData[key as keyof UserData];
+          if (value instanceof Date && key === 'birthDate') {
+            // Format Date objects to YYYY-MM-DD string for input[type="date"]
+            const dateValue = value as Date;
+            const formattedDate = dateValue.toISOString().split('T')[0];
+            form.setValue(key as keyof ProfileFormValues, formattedDate);
+          } else if (typeof value === 'string' || typeof value === 'number') {
+            // Only set string or number values directly
+            form.setValue(key as keyof ProfileFormValues, value as string);
+          }
         }
       });
     }
