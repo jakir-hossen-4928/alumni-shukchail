@@ -2,7 +2,8 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { User, CreditCard, Settings, Shield, Home, Users, Check } from 'lucide-react';
+import { User, CreditCard, Settings, Shield, Home, Users, Check, X } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface SidebarLink {
   title: string;
@@ -11,7 +12,11 @@ interface SidebarLink {
   roles: ('user' | 'admin')[];
 }
 
-const DashboardSidebar = () => {
+interface DashboardSidebarProps {
+  onClose?: () => void;
+}
+
+const DashboardSidebar = ({ onClose }: DashboardSidebarProps) => {
   const { userData } = useAuth();
   const location = useLocation();
   
@@ -65,11 +70,17 @@ const DashboardSidebar = () => {
   );
   
   return (
-    <div className="min-w-52 bg-gray-100 min-h-screen p-4 border-r">
-      <div className="mb-8">
+    <div className="min-w-60 bg-sidebar h-full p-4 border-r">
+      <div className="flex items-center justify-between mb-8">
         <h2 className="text-xl font-bold text-alumni-primary">
           {userData?.role === 'admin' ? 'অ্যাডমিন প্যানেল' : 'সদস্য ড্যাশবোর্ড'}
         </h2>
+        
+        {onClose && (
+          <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden">
+            <X className="h-5 w-5" />
+          </Button>
+        )}
       </div>
       
       <nav className="space-y-1">
@@ -77,11 +88,12 @@ const DashboardSidebar = () => {
           <Link
             key={link.href}
             to={link.href}
+            onClick={onClose}
             className={cn(
               "flex items-center py-2 px-3 rounded-md transition-colors",
               location.pathname === link.href
-                ? "bg-alumni-primary text-white"
-                : "text-gray-700 hover:bg-gray-200"
+                ? "bg-primary text-primary-foreground"
+                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
           >
             <span className="mr-3">{link.icon}</span>

@@ -1,8 +1,8 @@
+
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .logo {
@@ -12,10 +12,10 @@
   transition: filter 300ms;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em #3b82f6aa);
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 2em #3b82f6aa);
 }
 
 @keyframes logo-spin {
@@ -33,10 +33,24 @@
   }
 }
 
-.card {
-  padding: 2em;
+/* Custom utilities */
+.payment-method-card {
+  @apply border border-border rounded-lg p-4 transition-all cursor-pointer;
 }
 
-.read-the-docs {
-  color: #888;
+.payment-method-card.active {
+  @apply border-primary bg-primary/5;
+}
+
+.payment-method-card:hover {
+  @apply border-primary/70;
+}
+
+/* Admin dashboard */
+.stat-trend-up {
+  @apply flex items-center text-green-600 text-xs font-medium;
+}
+
+.stat-trend-down {
+  @apply flex items-center text-red-600 text-xs font-medium;
 }

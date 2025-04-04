@@ -19,3 +19,17 @@ export interface PaymentFormData {
   paymentNumber: string;
   transactionId: string;
 }
+
+export interface PaymentStatusChip {
+  status: 'pending' | 'verified' | 'failed';
+  className?: string;
+}
+
+export interface DashboardCardProps {
+  title: string;
+  value: number | string;
+  icon: React.ReactNode;
+  description?: string;
+  trend?: number;
+  className?: string;
+}

@@ -18,10 +18,13 @@ import Unauthorized from "./pages/Unauthorized";
 import Dashboard from "./pages/dashboard/Dashboard";
 import Profile from "./pages/dashboard/Profile";
 import Payment from "./pages/dashboard/Payment";
+import Settings from "./pages/dashboard/Settings";
 
 // Admin Pages
 import Users from "./pages/admin/Users";
 import Payments from "./pages/admin/Payments";
+import AdminSettings from "./pages/admin/Settings";
+import AdminDashboard from "./pages/admin/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -64,8 +67,24 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/dashboard/settings" 
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              } 
+            />
 
             {/* Admin Routes */}
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="/admin/users" 
               element={
@@ -79,6 +98,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="admin">
                   <Payments />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/settings" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminSettings />
                 </ProtectedRoute>
               } 
             />
