@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile } from '@/lib/api';
@@ -14,6 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { UserData } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
+import ProfileImageUploader from '@/components/ProfileImageUploader';
 
 const profileSchema = z.object({
   name: z.string().min(1, { message: 'নাম আবশ্যক' }),
@@ -41,6 +41,7 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 const Profile = () => {
   const { userData, currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -87,11 +88,22 @@ const Profile = () => {
     }
   }, [userData, form]);
   
+  const handleProfileImageChange = (file: File | null) => {
+    setProfileImage(file);
+  };
+  
   const onSubmit = async (data: ProfileFormValues) => {
     if (!currentUser?.uid) return;
     
     try {
       setLoading(true);
+      // Upload profile image if provided
+      if (profileImage) {
+        // In a real application, you would upload the image to storage
+        console.log('Would upload profile image:', profileImage.name);
+        // Update profile data with image URL
+      }
+      
       await updateUserProfile(currentUser.uid, data);
       toast.success('প্রোফাইল আপডেট করা হয়েছে!');
     } catch (error) {
@@ -121,6 +133,13 @@ const Profile = () => {
                   <CardDescription>আপনার ব্যক্তিগত তথ্য দিন</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="flex justify-center mb-6">
+                    <ProfileImageUploader
+                      currentImageUrl={userData?.profileImageUrl}
+                      onImageChange={handleProfileImageChange}
+                    />
+                  </div>
+                  
                   <FormField
                     control={form.control}
                     name="name"

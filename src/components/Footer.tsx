@@ -8,6 +8,17 @@ const Footer = () => {
   return (
     <footer className="bg-alumni-primary text-white">
       <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center mb-6">
+          <img 
+            src="https://i.ibb.co/NgkLwVm3/shukchail-logo.jpg" 
+            alt="শুকচাইল স্কুল লোগো" 
+            className="h-16 w-auto"
+            onError={(e) => {
+              e.currentTarget.src = '/placeholder.svg';
+            }}
+          />
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <h3 className="text-xl font-semibold mb-4">শুকচাইল সরকারি প্রাথমিক বিদ্যালয় অ্যালামনাই</h3>

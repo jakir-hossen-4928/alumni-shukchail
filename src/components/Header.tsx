@@ -23,8 +23,18 @@ const Header = () => {
     <header className="bg-alumni-primary text-white shadow-md">
       <div className="container mx-auto px-4 py-4">
         <nav className="flex justify-between items-center">
-          <Link to="/" className="font-bold text-xl md:text-2xl">
-            শুকচাইল স্কুল অ্যালামনাই
+          <Link to="/" className="flex items-center">
+            <img 
+              src="https://i.ibb.co/NgkLwVm3/shukchail-logo.jpg" 
+              alt="শুকচাইল স্কুল লোগো" 
+              className="h-10 w-auto mr-3"
+              onError={(e) => {
+                e.currentTarget.src = '/placeholder.svg';
+              }}
+            />
+            <span className="font-bold text-xl md:text-2xl">
+              শুকচাইল স্কুল অ্যালামনাই
+            </span>
           </Link>
           
           {/* Desktop Navigation */}

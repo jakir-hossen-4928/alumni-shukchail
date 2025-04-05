@@ -1,6 +1,7 @@
 
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import PublicLayout from "@/components/PublicLayout";
 
 // Public Pages
 import HomePage from "@/pages/home/Index";
@@ -28,15 +29,19 @@ import AdminDashboard from "@/pages/admin/Dashboard";
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<HomePage />} />
+      {/* Public Routes with PublicLayout */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/events" element={<Events />} />
+        <Route path="/contact" element={<Contact />} />
+      </Route>
+
+      {/* Authentication Routes without layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/events" element={<Events />} />
-      <Route path="/contact" element={<Contact />} />
 
       {/* User Dashboard Routes */}
       <Route 
