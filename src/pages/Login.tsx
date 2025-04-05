@@ -37,11 +37,21 @@ const Login = () => {
   };
   
   return (
-    <div className="min-h-screen bg-alumni-light py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl mb-2">লগইন করুন</CardTitle>
-          <CardDescription>
+          <div className="flex justify-center mb-4">
+            <img 
+              src="https://i.ibb.co/NgkLwVm3/shukchail-logo.jpg" 
+              alt="Shukchail Logo" 
+              className="h-16"
+              onError={(e) => {
+                e.currentTarget.src = '/placeholder.svg';
+              }}
+            />
+          </div>
+          <CardTitle className="text-2xl mb-2 text-gray-800">লগইন করুন</CardTitle>
+          <CardDescription className="text-gray-600">
             আপনার অ্যাকাউন্টে লগইন করতে ইমেইল এবং পাসওয়ার্ড দিন
           </CardDescription>
         </CardHeader>
@@ -66,7 +76,7 @@ const Login = () => {
                 <Label htmlFor="password">পাসওয়ার্ড</Label>
                 <Link 
                   to="/forgot-password" 
-                  className="text-sm text-alumni-highlight hover:underline"
+                  className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
                 >
                   পাসওয়ার্ড ভুলে গেছেন?
                 </Link>
@@ -84,7 +94,7 @@ const Login = () => {
             
             <Button 
               type="submit" 
-              className="w-full bg-alumni-primary hover:bg-alumni-secondary" 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
               disabled={loading}
             >
               {loading ? (
@@ -99,9 +109,9 @@ const Login = () => {
         </CardContent>
         
         <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-600">
             অ্যাকাউন্ট নেই?{' '}
-            <Link to="/register" className="text-alumni-highlight hover:underline">
+            <Link to="/register" className="text-blue-600 hover:text-blue-800 hover:underline">
               রেজিস্টার করুন
             </Link>
           </p>

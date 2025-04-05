@@ -70,9 +70,9 @@ const DashboardSidebar = ({ onClose }: DashboardSidebarProps) => {
   );
   
   return (
-    <div className="min-w-60 bg-sidebar h-full p-4 border-r">
+    <div className="min-w-60 bg-white h-full p-4 border-r shadow-sm">
       <div className="flex items-center justify-between mb-8">
-        <h2 className="text-xl font-bold text-alumni-primary">
+        <h2 className="text-xl font-bold text-gray-800">
           {userData?.role === 'admin' ? 'অ্যাডমিন প্যানেল' : 'সদস্য ড্যাশবোর্ড'}
         </h2>
         
@@ -92,8 +92,8 @@ const DashboardSidebar = ({ onClose }: DashboardSidebarProps) => {
             className={cn(
               "flex items-center py-2 px-3 rounded-md transition-colors",
               location.pathname === link.href
-                ? "bg-primary text-primary-foreground"
-                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                ? "bg-blue-600 text-white"
+                : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
             )}
           >
             <span className="mr-3">{link.icon}</span>
