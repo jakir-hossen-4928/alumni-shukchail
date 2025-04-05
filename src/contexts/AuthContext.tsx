@@ -23,6 +23,7 @@ export interface UserData {
   membershipStatus: MembershipStatus;
   membershipExpiresAt: Date | null;
   createdAt: Date;
+  profileImageUrl?: string; // Added this property
   // Other fields as needed
 }
 
@@ -61,7 +62,8 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     role: 'user',
     membershipStatus: 'pending',
     membershipExpiresAt: null,
-    createdAt: new Date()
+    createdAt: new Date(),
+    profileImageUrl: undefined
   };
 
   const signup = async (email: string, password: string, phoneNumber: string = '') => {

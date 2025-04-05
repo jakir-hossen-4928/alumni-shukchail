@@ -1,4 +1,3 @@
-
 import { collection, addDoc, getDocs, doc, getDoc, updateDoc, query, where } from 'firebase/firestore';
 import { db } from './firebase';
 import { Payment, PaymentFormData } from './types';
@@ -15,7 +14,8 @@ const mockUsers: UserData[] = [
     role: 'user',
     membershipStatus: 'pending',
     membershipExpiresAt: null,
-    createdAt: new Date()
+    createdAt: new Date(),
+    profileImageUrl: 'https://i.imgur.com/6VBx3io.png'
   },
   {
     uid: 'mock-uid-67890',
@@ -25,7 +25,8 @@ const mockUsers: UserData[] = [
     role: 'admin',
     membershipStatus: 'approved',
     membershipExpiresAt: new Date('2025-12-31'),
-    createdAt: new Date('2023-01-01')
+    createdAt: new Date('2023-01-01'),
+    profileImageUrl: 'https://i.imgur.com/8Km9tLL.png'
   },
   {
     uid: 'mock-uid-13579',
@@ -35,7 +36,8 @@ const mockUsers: UserData[] = [
     role: 'user',
     membershipStatus: 'approved',
     membershipExpiresAt: new Date('2025-05-15'),
-    createdAt: new Date('2024-01-15')
+    createdAt: new Date('2024-01-15'),
+    profileImageUrl: 'https://i.imgur.com/7XL6oZ9.png'
   }
 ];
 

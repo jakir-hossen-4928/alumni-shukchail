@@ -2,6 +2,7 @@
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PublicLayout from "@/components/PublicLayout";
+import { Outlet } from "react-router-dom";
 
 // Public Pages
 import HomePage from "@/pages/home/Index";
@@ -30,7 +31,7 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Public Routes with PublicLayout */}
-      <Route element={<PublicLayout />}>
+      <Route element={<PublicLayout><Outlet /></PublicLayout>}>
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<About />} />
         <Route path="/events" element={<Events />} />
