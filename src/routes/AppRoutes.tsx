@@ -36,13 +36,14 @@ const AppRoutes = () => {
         <Route path="/about" element={<About />} />
         <Route path="/events" element={<Events />} />
         <Route path="/contact" element={<Contact />} />
-      </Route>
 
-      {/* Authentication Routes without layout */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/unauthorized" element={<Unauthorized />} />
+        {/* Authentication Routes also using PublicLayout */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
 
       {/* User Dashboard Routes */}
       <Route 
@@ -111,9 +112,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
-
-      {/* 404 Route */}
-      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
