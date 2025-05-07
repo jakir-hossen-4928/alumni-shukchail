@@ -1,39 +1,56 @@
+// src/contexts/AuthContext.tsx
+
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { 
-  createUserWithEmailAndPassword, 
+import {
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
-  User 
+  sendPasswordResetEmail, // Added for password reset
+  User
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { toast } from 'sonner';
 
 // Define our types
-export type UserRole = 'admin' | 'user';
-export type MembershipStatus = 'pending' | 'approved' | 'rejected';
-
-export interface UserData {
+export interface User {
   uid: string;
   email: string;
+  name: string;
+  role: 'user' | 'admin';
+  profileImageUrl?: string;
   phoneNumber?: string;
-  name?: string;
-  role: UserRole;
-  membershipStatus: MembershipStatus;
-  membershipExpiresAt: Date | null;
+  approved: boolean;
+  approvedAt?: Date;
+  approvedBy?: string;
+  gender?: 'male' | 'female' | 'other';
+  birthDate?: Date;
+  nationalIdOrBirthCert?: string;
+  currentAddress?: string;
+  permanentAddress?: string;
+  occupation?: string;
+  currentLocation?: string;
+  studyYears?: string;
+  passYear?: string;
+  secondaryEducation?: string;
+  higherEducation?: string;
+  currentWorkplace?: string;
+  workExperience?: string;
+  specialContribution?: string;
+  suggestions?: string;
   createdAt: Date;
-  profileImageUrl?: string; // Added this property
-  // Other fields as needed
+  updatedAt: Date;
 }
 
 interface AuthContextType {
   currentUser: User | null;
-  userData: UserData | null;
+  userData: User | null;
   loading: boolean;
-  signup: (email: string, password: string, phoneNumber?: string) => Promise<void>;
+  signup: (email: string, password: string, phoneNumber?: string, name?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>; // Added resetPassword
 }
 
 // Create context with default values
@@ -44,131 +61,139 @@ const AuthContext = createContext<AuthContextType>({
   signup: async () => {},
   login: async () => {},
   logout: async () => {},
+  resetPassword: async () => {}, // Default empty function
 });
 
 export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // For development, we'll use mock data for testing
-  const mockUserData: UserData = {
-    uid: 'mock-uid-12345',
-    email: 'user@example.com',
-    phoneNumber: '01712345678',
-    name: 'Test User',
-    role: 'user',
-    membershipStatus: 'pending',
-    membershipExpiresAt: null,
-    createdAt: new Date(),
-    profileImageUrl: undefined
-  };
-
-  const signup = async (email: string, password: string, phoneNumber: string = '') => {
+  const signup = async (email: string, password: string, phoneNumber: string = '', name: string = '') => {
     try {
-      // In a real app, we would actually create the account
-      // const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // const user = userCredential.user;
-      
-      // For development, we'll just simulate creating a user
-      const mockUser = { uid: 'mock-uid-12345', email } as User;
-      
-      // Here we would store the user in Firestore
-      // await setDoc(doc(db, "users", user.uid), {
-      //   uid: user.uid,
-      //   email,
-      //   phoneNumber,
-      //   role: "user",
-      //   membershipStatus: "pending",
-      //   membershipExpiresAt: null,
-      //   createdAt: new Date()
-      // });
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-      // For development, we'll use our mock data
-      setCurrentUser(mockUser);
-      setUserData(mockUserData);
-      
-      toast.success('Account created successfully!');
+      const userDocData: User = {
+        uid: user.uid,
+        email,
+        name: name || '',
+        role: 'user',
+        profileImageUrl: '',
+        phoneNumber,
+        approved: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await setDoc(doc(db, 'users', user.uid), {
+        ...userDocData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      setCurrentUser(user);
+      setUserData({ ...userDocData, createdAt: new Date(), updatedAt: new Date() });
+
+      toast.success('অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!');
     } catch (error) {
-      console.error("Error signing up:", error);
-      toast.error('Failed to create account. Please try again.');
+      console.error('Error signing up:', error);
+      toast.error('অ্যাকাউন্ট তৈরি করতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।');
       throw error;
     }
   };
 
   const login = async (email: string, password: string) => {
     try {
-      // In a real app, we would actually log in
-      // const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // const user = userCredential.user;
-      
-      // For development, we'll just simulate login with mock data
-      const mockUser = { uid: 'mock-uid-12345', email } as User;
-      
-      // Here we would fetch the user data from Firestore
-      // const userDocRef = doc(db, "users", user.uid);
-      // const userDoc = await getDoc(userDocRef);
-      // if (userDoc.exists()) {
-      //   setUserData(userDoc.data() as UserData);
-      // }
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-      // For development, we'll use our mock data
-      setCurrentUser(mockUser);
-      setUserData(mockUserData);
-      
-      toast.success('Logged in successfully!');
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const data = userDoc.data() as User;
+        setUserData({
+          ...data,
+          createdAt: data.createdAt.toDate(),
+          updatedAt: data.updatedAt.toDate(),
+          approvedAt: data.approvedAt ? data.approvedAt.toDate() : undefined,
+          birthDate: data.birthDate ? data.birthDate.toDate() : undefined,
+        });
+      } else {
+        throw new Error('User data not found in Firestore');
+      }
+
+      setCurrentUser(user);
+      toast.success('সফলভাবে লগইন করা হয়েছে!');
     } catch (error) {
-      console.error("Error logging in:", error);
-      toast.error('Failed to log in. Please check your credentials.');
+      console.error('Error logging in:', error);
+      toast.error('লগইন ব্যর্থ হয়েছে। আপনার তথ্য চেক করুন।');
       throw error;
     }
   };
 
   const logout = async () => {
     try {
-      // In a real app, we would actually log out
-      // await signOut(auth);
-      
-      // For development, we'll just clear our state
+      await signOut(auth);
       setCurrentUser(null);
       setUserData(null);
-      
-      toast.success('Logged out successfully!');
+      toast.success('সফলভাবে লগআউট করা হয়েছে!');
     } catch (error) {
-      console.error("Error logging out:", error);
-      toast.error('Failed to log out. Please try again.');
+      console.error('Error logging out:', error);
+      toast.error('লগআউট করতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।');
+      throw error;
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      console.log('Password reset email sent to:', email);
+      toast.success('পাসওয়ার্ড রিসেট লিংক পাঠানো হয়েছে।');
+    } catch (error: any) {
+      console.error('Error sending password reset email:', error);
+      if (error.code === 'auth/user-not-found') {
+        toast.error('এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি।');
+      } else if (error.code === 'auth/invalid-email') {
+        toast.error('অবৈধ ইমেইল ঠিকানা।');
+      } else {
+        toast.error('পাসওয়ার্ড রিসেট করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      }
       throw error;
     }
   };
 
   useEffect(() => {
-    // In a real app, we would listen for auth state changes
-    // const unsubscribe = onAuthStateChanged(auth, async (user) => {
-    //   setCurrentUser(user);
-    //   
-    //   if (user) {
-    //     const userDocRef = doc(db, "users", user.uid);
-    //     const userDoc = await getDoc(userDocRef);
-    //     if (userDoc.exists()) {
-    //       setUserData(userDoc.data() as UserData);
-    //     }
-    //   } else {
-    //     setUserData(null);
-    //   }
-    //   
-    //   setLoading(false);
-    // });
-    //
-    // return unsubscribe;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
 
-    // For development, we'll simulate the auth state loading
-    const timeout = setTimeout(() => {
+      if (user) {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const data = userDoc.data() as User;
+          setUserData({
+            ...data,
+            createdAt: data.createdAt.toDate(),
+            updatedAt: data.updatedAt.toDate(),
+            approvedAt: data.approvedAt ? data.approvedAt.toDate() : undefined,
+            birthDate: data.birthDate ? data.birthDate.toDate() : undefined,
+          });
+        } else {
+          setUserData(null);
+        }
+      } else {
+        setUserData(null);
+      }
+
       setLoading(false);
-    }, 1000);
+    });
 
-    return () => clearTimeout(timeout);
+    return () => unsubscribe();
   }, []);
 
   const value = {
@@ -177,7 +202,8 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     loading,
     signup,
     login,
-    logout
+    logout,
+    resetPassword, // Added to context value
   };
 
   return (

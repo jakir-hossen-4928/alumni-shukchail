@@ -25,7 +25,9 @@ import Settings from "@/pages/dashboard/Settings";
 import Users from "@/pages/admin/Users";
 import Payments from "@/pages/admin/Payments";
 import AdminSettings from "@/pages/admin/Settings";
-import AdminDashboard from "@/pages/admin/Dashboard";
+import AdminDashboard from "@/pages/admin/DashboardOverview";
+import PaymentSuccess from "@/components/PaymentSuccess";
+import PaymentFail from "@/components/PaymentFail";
 
 const AppRoutes = () => {
   return (
@@ -36,6 +38,8 @@ const AppRoutes = () => {
         <Route path="/about" element={<About />} />
         <Route path="/events" element={<Events />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/payment-failed" element={<PaymentFail />} />
 
         {/* Authentication Routes also using PublicLayout */}
         <Route path="/login" element={<Login />} />
@@ -46,71 +50,71 @@ const AppRoutes = () => {
       </Route>
 
       {/* User Dashboard Routes */}
-      <Route 
-        path="/dashboard" 
+      <Route
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/dashboard/profile" 
+      <Route
+        path="/dashboard/profile"
         element={
           <ProtectedRoute>
             <Profile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/dashboard/payment" 
+      <Route
+        path="/dashboard/payment"
         element={
           <ProtectedRoute>
             <Payment />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/dashboard/settings" 
+      <Route
+        path="/dashboard/settings"
         element={
           <ProtectedRoute>
             <Settings />
           </ProtectedRoute>
-        } 
+        }
       />
 
       {/* Admin Routes */}
-      <Route 
-        path="/admin" 
+      <Route
+        path="/admin"
         element={
           <ProtectedRoute requiredRole="admin">
             <AdminDashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/users" 
+      <Route
+        path="/admin/users"
         element={
           <ProtectedRoute requiredRole="admin">
             <Users />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/payments" 
+      <Route
+        path="/admin/payments"
         element={
           <ProtectedRoute requiredRole="admin">
             <Payments />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/settings" 
+      <Route
+        path="/admin/settings"
         element={
           <ProtectedRoute requiredRole="admin">
             <AdminSettings />
           </ProtectedRoute>
-        } 
+        }
       />
     </Routes>
   );

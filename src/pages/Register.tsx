@@ -1,3 +1,4 @@
+// src/pages/Register.tsx
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -8,42 +9,44 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { UserPlus } from 'lucide-react';
+import { createUserProfile } from '@/lib/api';
 
 const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [name, setName] = useState(''); // Added name field
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { signup } = useAuth();
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password || !confirmPassword) {
+
+    if (!email || !password || !confirmPassword || !name) { // Added name check
       toast.error('সবগুলি প্রয়োজনীয় ক্ষেত্র পূরণ করুন।');
       return;
     }
-    
+
     if (password !== confirmPassword) {
       toast.error('পাসওয়ার্ড মিলছে না।');
       return;
     }
-    
+
     try {
       setLoading(true);
-      await signup(email, password, phoneNumber);
-      // Navigate to the dashboard after successful registration
+      await signup(email, password, phoneNumber, name); // Pass name to signup
+      toast.success('নিবন্ধন সফল হয়েছে!');
       navigate('/dashboard', { state: { newRegistration: true } });
     } catch (error) {
       console.error('Registration error:', error);
-      // Error is already handled in the auth context
+      toast.error('নিবন্ধন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।');
     } finally {
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-alumni-light py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <Card className="w-full max-w-md">
@@ -53,9 +56,21 @@ const Register = () => {
             অ্যালামনাই অ্যাসোসিয়েশনের সদস্য হিসেবে নিবন্ধন করুন
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">নাম *</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="আপনার পূর্ণ নাম"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">ইমেইল *</Label>
               <Input
@@ -68,7 +83,7 @@ const Register = () => {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="phone">মোবাইল নম্বর (ঐচ্ছিক)</Label>
               <Input
@@ -80,7 +95,7 @@ const Register = () => {
                 disabled={loading}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">পাসওয়ার্ড *</Label>
               <Input
@@ -93,7 +108,7 @@ const Register = () => {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="confirm-password">পাসওয়ার্ড নিশ্চিত করুন *</Label>
               <Input
@@ -106,10 +121,10 @@ const Register = () => {
                 required
               />
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full bg-alumni-primary hover:bg-alumni-secondary" 
+
+            <Button
+              type="submit"
+              className="w-full bg-alumni-primary hover:bg-alumni-secondary"
               disabled={loading}
             >
               {loading ? (
@@ -122,7 +137,7 @@ const Register = () => {
             </Button>
           </form>
         </CardContent>
-        
+
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
             ইতিমধ্যে অ্যাকাউন্ট আছে?{' '}

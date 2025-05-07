@@ -1,201 +1,260 @@
-import { collection, addDoc, getDocs, doc, getDoc, updateDoc, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, getDoc, updateDoc, query, where, serverTimestamp, setDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
-import { Payment, PaymentFormData } from './types';
+import { Payment, User } from './types';
 import { toast } from 'sonner';
-import { UserData } from '@/contexts/AuthContext';
+import { Timestamp } from 'firebase/firestore';
 
-// Mock data for development
-const mockUsers: UserData[] = [
-  {
-    uid: 'mock-uid-12345',
-    email: 'user@example.com',
-    phoneNumber: '01712345678',
-    name: 'আব্দুল করিম',
-    role: 'user',
-    membershipStatus: 'pending',
-    membershipExpiresAt: null,
-    createdAt: new Date(),
-    profileImageUrl: 'https://i.imgur.com/6VBx3io.png'
-  },
-  {
-    uid: 'mock-uid-67890',
-    email: 'admin@example.com',
-    phoneNumber: '01798765432',
-    name: 'মোহাম্মদ আলী',
-    role: 'admin',
-    membershipStatus: 'approved',
-    membershipExpiresAt: new Date('2025-12-31'),
-    createdAt: new Date('2023-01-01'),
-    profileImageUrl: 'https://i.imgur.com/8Km9tLL.png'
-  },
-  {
-    uid: 'mock-uid-13579',
-    email: 'fatima@example.com',
-    phoneNumber: '01712345678',
-    name: 'ফাতিমা আক্তার',
-    role: 'user',
-    membershipStatus: 'approved',
-    membershipExpiresAt: new Date('2025-05-15'),
-    createdAt: new Date('2024-01-15'),
-    profileImageUrl: 'https://i.imgur.com/7XL6oZ9.png'
-  }
-];
-
-const mockPayments: Payment[] = [
-  {
-    id: 'payment-1',
-    userId: 'mock-uid-13579',
-    amount: 500,
-    paymentMethod: 'bKash',
-    paymentNumber: '01712345678',
-    transactionId: 'TXN123456',
-    status: 'verified',
-    paymentDate: new Date('2024-01-15'),
-    verifiedAt: new Date('2024-01-16')
-  },
-  {
-    id: 'payment-2',
-    userId: 'mock-uid-12345',
-    amount: 500,
-    paymentMethod: 'bKash',
-    paymentNumber: '01798765432',
-    transactionId: 'TXN654321',
-    status: 'pending',
-    paymentDate: new Date('2024-04-01'),
-    verifiedAt: null
-  }
-];
-
-// Payment related functions
-export const submitPayment = async (userId: string, paymentData: PaymentFormData): Promise<boolean> => {
-  try {
-    // In a real app, we would store the payment data in Firestore
-    // await addDoc(collection(db, 'payments'), {
-    //   userId,
-    //   ...paymentData,
-    //   status: 'pending',
-    //   paymentDate: new Date(),
-    //   verifiedAt: null
-    // });
-
-    // For development, we'll just simulate adding a payment
-    console.log('Payment submitted:', { userId, ...paymentData });
-    toast.success('Payment submitted successfully!');
-    return true;
-  } catch (error) {
-    console.error('Error submitting payment:', error);
-    toast.error('Failed to submit payment. Please try again.');
-    return false;
-  }
-};
-
-export const getUserPayments = async (userId: string): Promise<Payment[]> => {
-  try {
-    // In a real app, we would query Firestore for payments
-    // const paymentsRef = collection(db, 'payments');
-    // const q = query(paymentsRef, where('userId', '==', userId));
-    // const querySnapshot = await getDocs(q);
-    // return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
-
-    // For development, we'll return mock payments
-    return mockPayments.filter(payment => payment.userId === userId);
-  } catch (error) {
-    console.error('Error getting user payments:', error);
-    toast.error('Failed to load payment history.');
-    return [];
-  }
-};
-
-export const getAllPayments = async (): Promise<Payment[]> => {
-  try {
-    // In a real app, we would query Firestore for all payments
-    // const paymentsRef = collection(db, 'payments');
-    // const querySnapshot = await getDocs(paymentsRef);
-    // return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
-
-    // For development, we'll return all mock payments
-    return mockPayments;
-  } catch (error) {
-    console.error('Error getting all payments:', error);
-    toast.error('Failed to load payments.');
-    return [];
-  }
-};
-
-export const verifyPayment = async (paymentId: string, userId: string): Promise<boolean> => {
-  try {
-    // In a real app, we would update the payment status and user membership
-    // const paymentRef = doc(db, 'payments', paymentId);
-    // await updateDoc(paymentRef, {
-    //   status: 'verified',
-    //   verifiedAt: new Date()
-    // });
-    //
-    // const userRef = doc(db, 'users', userId);
-    // const expirationDate = new Date();
-    // expirationDate.setFullYear(expirationDate.getFullYear() + 1);
-    // await updateDoc(userRef, {
-    //   membershipExpiresAt: expirationDate
-    // });
-
-    // For development, we'll just simulate verifying a payment
-    console.log('Payment verified:', { paymentId, userId });
-    toast.success('Payment verified successfully!');
-    return true;
-  } catch (error) {
-    console.error('Error verifying payment:', error);
-    toast.error('Failed to verify payment. Please try again.');
-    return false;
-  }
+// Helper function to convert Firestore Timestamp to Date
+const convertToDate = (value: any): Date | undefined => {
+  if (!value) return undefined;
+  if (value instanceof Timestamp) return value.toDate();
+  if (value instanceof Date) return value;
+  if (typeof value === 'string') return new Date(value);
+  return undefined; // Handle unexpected types gracefully
 };
 
 // User related functions
-export const updateUserProfile = async (userId: string, profileData: Partial<UserData>): Promise<boolean> => {
+export const createUserProfile = async (userId: string, userData: Partial<User>): Promise<boolean> => {
   try {
-    // In a real app, we would update the user profile in Firestore
-    // const userRef = doc(db, 'users', userId);
-    // await updateDoc(userRef, profileData);
+    const userRef = doc(db, 'users', userId);
+    const defaultData: Partial<User> = {
+      ...userData,
+      role: userData.role || 'user',
+      approved: userData.approved ?? false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      lastPaymentDate: null,
+      paymentCountInYear: 0,
+      membershipExpiry: null,
+    };
 
-    // For development, we'll just simulate updating the profile
-    console.log('Profile updated:', { userId, ...profileData });
-    toast.success('Profile updated successfully!');
+    await setDoc(userRef, defaultData);
     return true;
   } catch (error) {
-    console.error('Error updating profile:', error);
-    toast.error('Failed to update profile. Please try again.');
+    console.error('Error creating user profile:', error);
+    toast.error('প্রোফাইল তৈরি করতে ব্যর্থ হয়েছে।');
     return false;
   }
 };
 
-export const getAllUsers = async (): Promise<UserData[]> => {
+export const updateUserProfile = async (userId: string, profileData: Partial<User>): Promise<boolean> => {
   try {
-    // In a real app, we would query Firestore for all users
-    // const usersRef = collection(db, 'users');
-    // const querySnapshot = await getDocs(usersRef);
-    // return querySnapshot.docs.map(doc => ({ ...doc.data() } as UserData));
+    const userRef = doc(db, 'users', userId);
+    const updateData: Partial<User> = {
+      ...profileData,
+      updatedAt: serverTimestamp(),
+    };
 
-    // For development, we'll return mock users
-    return mockUsers;
+    if (profileData.birthDate) {
+      updateData.birthDate = profileData.birthDate instanceof Date
+        ? profileData.birthDate
+        : new Date(profileData.birthDate);
+    }
+
+    await updateDoc(userRef, updateData);
+    toast.success('প্রোফাইল সফলভাবে আপডেট করা হয়েছে!');
+    return true;
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    toast.error('প্রোফাইল আপডেট করতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।');
+    return false;
+  }
+};
+
+export const getAllUsers = async (): Promise<User[]> => {
+  try {
+    const usersRef = collection(db, 'users');
+    const querySnapshot = await getDocs(usersRef);
+    return querySnapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data(),
+      createdAt: convertToDate(doc.data().createdAt),
+      updatedAt: convertToDate(doc.data().updatedAt),
+      approvedAt: convertToDate(doc.data().approvedAt),
+      birthDate: convertToDate(doc.data().birthDate),
+      lastPaymentDate: convertToDate(doc.data().lastPaymentDate),
+      membershipExpiry: convertToDate(doc.data().membershipExpiry),
+    } as User));
   } catch (error) {
     console.error('Error getting all users:', error);
-    toast.error('Failed to load users.');
+    toast.error('ব্যবহারকারীদের তালিকা লোড করতে ব্যর্থ হয়েছে।');
     return [];
   }
 };
 
 export const updateMembershipStatus = async (userId: string, status: 'approved' | 'rejected'): Promise<boolean> => {
   try {
-    // In a real app, we would update the user's membership status in Firestore
-    // const userRef = doc(db, 'users', userId);
-    // await updateDoc(userRef, { membershipStatus: status });
+    const unapprovedUserRef = doc(db, 'unapprovedUsers', userId);
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    const unapprovedUserSnap = await getDoc(unapprovedUserRef);
+    const userData = userSnap.data() as User;
 
-    // For development, we'll just simulate updating the status
-    console.log('Membership status updated:', { userId, status });
-    toast.success(`Membership ${status} successfully!`);
+    const updateData: Partial<User> = {
+      approved: status === 'approved',
+      updatedAt: serverTimestamp(),
+    };
+
+    if (status === 'approved') {
+      const now = new Date();
+      updateData.approvedAt = serverTimestamp();
+      updateData.lastPaymentDate = serverTimestamp();
+      updateData.paymentCountInYear = (userData?.paymentCountInYear || 0) < 2 ? (userData?.paymentCountInYear || 0) + 1 : 1;
+      const expiryDate = new Date(now);
+      expiryDate.setMonth(now.getMonth() + 6);
+      updateData.membershipExpiry = expiryDate;
+    }
+
+    await updateDoc(userRef, updateData);
+    if (unapprovedUserSnap.exists()) {
+      await deleteDoc(unapprovedUserRef);
+    }
+    toast.success(`সদস্যপদ ${status === 'approved' ? 'অনুমোদিত' : 'প্রত্যাখ্যাত'} হয়েছে!`);
     return true;
   } catch (error) {
     console.error('Error updating membership status:', error);
-    toast.error('Failed to update membership status. Please try again.');
+    toast.error('সদস্যপদ স্থিতি আপডেট করতে ব্যর্থ হয়েছে।');
     return false;
+  }
+};
+
+export const getUserById = async (userId: string): Promise<User | null> => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+      return {
+        uid: userSnap.id,
+        ...data,
+        createdAt: convertToDate(data.createdAt),
+        updatedAt: convertToDate(data.updatedAt),
+        approvedAt: convertToDate(data.approvedAt),
+        birthDate: convertToDate(data.birthDate),
+        lastPaymentDate: convertToDate(data.lastPaymentDate),
+        membershipExpiry: convertToDate(data.membershipExpiry),
+      } as User;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return null;
+  }
+};
+
+// Payment related functions
+export const initiateSslcommerzPayment = async (userId: string, amount: number): Promise<{ GatewayPageURL: string }> => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/sslcommerz/create-payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, amount }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to initiate SSLCommerz payment (status: ${response.status})`);
+    }
+
+    const data = await response.json();
+    if (!data.GatewayPageURL) {
+      throw new Error('Invalid SSLCommerz response: Missing GatewayPageURL');
+    }
+
+    return { GatewayPageURL: data.GatewayPageURL };
+  } catch (error) {
+    console.error('Error initiating SSLCommerz payment:', error);
+    toast.error(error.message || 'পেমেন্ট শুরু করতে সমস্যা হয়েছে।');
+    throw error;
+  }
+};
+
+export const getUserPayments = async (userId: string): Promise<Payment[]> => {
+  try {
+    const paymentsRef = collection(db, 'payments');
+    const q = query(paymentsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: convertToDate(doc.data().createdAt),
+      updatedAt: convertToDate(doc.data().updatedAt),
+      completedAt: convertToDate(doc.data().completedAt),
+      verifiedAt: convertToDate(doc.data().verifiedAt),
+    } as Payment));
+  } catch (error) {
+    console.error('Error getting user payments:', error);
+    toast.error('পেমেন্ট ইতিহাস লোড করতে ব্যর্থ হয়েছে।');
+    return [];
+  }
+};
+
+
+export const updatePaymentStatus = async (
+  paymentId: string,
+  status: 'pending' | 'verified' | 'completed' | 'failed' | 'cancelled',
+  token: string // Firebase ID token
+): Promise<boolean> => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/payments/update-status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ paymentId, status }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to update payment status (status: ${response.status})`);
+    }
+
+    const data = await response.json();
+    toast.success(data.message || 'পেমেন্ট স্থিতি সফলভাবে আপডেট করা হয়েছে!');
+    return true;
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+    toast.error(error.message || 'পেমেন্ট স্থিতি আপডেট করতে সমস্যা হয়েছে।');
+    return false;
+  }
+};
+
+export const getAllPayments = async (): Promise<Payment[]> => {
+  try {
+    const paymentsRef = collection(db, 'payments');
+    const q = query(paymentsRef, orderBy('createdAt', 'desc')); // Sort by createdAt descending
+    const querySnapshot = await getDocs(q);
+    const payments = await Promise.all(
+      querySnapshot.docs.map(async (doc) => {
+        const data = doc.data();
+        const user = await getUserById(data.userId);
+        return {
+          id: doc.id,
+          userId: data.userId,
+          userName: user?.name || 'Unknown User',
+          amount: data.amount,
+          tran_id: data.tran_id,
+          status: data.status,
+          val_id: data.val_id,
+          bank_tran_id: data.bank_tran_id,
+          card_type: data.card_type,
+          currency: data.currency,
+          store_amount: data.store_amount,
+          card_issuer: data.card_issuer,
+          card_brand: data.card_brand,
+          createdAt: convertToDate(data.createdAt),
+          updatedAt: convertToDate(data.updatedAt),
+          completedAt: convertToDate(data.completedAt),
+          verifiedAt: convertToDate(data.verifiedAt),
+          error: data.error,
+        } as Payment;
+      })
+    );
+    return payments;
+  } catch (error) {
+    console.error('Error getting all payments:', error);
+    toast.error('সমস্ত পেমেন্ট লোড করতে ব্যর্থ হয়েছে।');
+    throw error;
   }
 };

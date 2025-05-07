@@ -1,9 +1,7 @@
-
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import DashboardNavbar from './DashboardNavbar';
 import DashboardFooter from './DashboardFooter';
 import DashboardSidebar from './DashboardSidebar';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -11,32 +9,67 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isMobile = useIsMobile();
-  
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const handleOverlayClick = () => {
+    if (sidebarOpen) {
+      setSidebarOpen(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       <DashboardNavbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      <div className="flex flex-1 pt-16"> {/* Added pt-16 to account for fixed navbar */}
-        {isMobile ? (
+
+      <div className="flex flex-1 overflow-hidden pt-16">
+        {/* Mobile Sidebar */}
+        {isMobile && (
           <>
-            <div className={`fixed inset-0 bg-black/30 z-40 transition-opacity duration-300 ease-in-out ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
-                onClick={() => setSidebarOpen(false)} />
-            
-            <div className={`fixed top-0 left-0 h-full z-50 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div
+              className={`fixed inset-0 bg-black/50 z-40 transition-opacity duration-300 ${
+                sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+              onClick={handleOverlayClick}
+              aria-hidden="true"
+            />
+            <div
+              className={`fixed top-0 left-0 h-full w-64 z-50 transform transition-transform duration-300 ease-in-out ${
+                sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+              }`}
+            >
               <DashboardSidebar onClose={() => setSidebarOpen(false)} />
             </div>
           </>
-        ) : (
-          <DashboardSidebar />
         )}
-        
-        <main className="flex-1 p-4 md:p-6 bg-background md:ml-64">
-          <div className="max-w-7xl mx-auto">
-            {children}
+
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <div className="hidden lg:block w-64 flex-shrink-0">
+            <div className="fixed h-full w-64">
+              <DashboardSidebar />
+            </div>
           </div>
-        </main>
+        )}
+
+        {/* Main Content */}
+        <div className={`flex-1 overflow-y-auto`}>
+          <div className="p-6 min-h-[calc(100vh-4rem)]">
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
+          </div>
+          <DashboardFooter />
+        </div>
       </div>
-      <DashboardFooter />
     </div>
   );
 };

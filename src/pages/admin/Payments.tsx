@@ -1,165 +1,169 @@
-
 import { useEffect, useState } from 'react';
-import { getAllPayments, verifyPayment } from '@/lib/api';
-import { Payment } from '@/lib/types';
+import { getAllPayments, updatePaymentStatus } from '@/lib/api';
+import { Payment, DashboardCardProps } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { CheckCircle2, AlertCircle, Clock, Search } from 'lucide-react';
+import { Search, CreditCard, DollarSign, Clock } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getUserById } from '@/lib/api';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const DashboardCard: React.FC<DashboardCardProps> = ({ title, value, icon, description, className }) => (
+  <Card className={className}>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      {icon}
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{value}</div>
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    </CardContent>
+  </Card>
+);
+
 
 const Payments = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('pending');
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userToken, setUserToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const token = await user.getIdToken();
+        setUserToken(token);
+        const userData = await getUserById(user.uid);
+        setIsAdmin(userData?.role === 'admin');
+      } else {
+        setIsAdmin(false);
+        setUserToken(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     const fetchPayments = async () => {
       try {
         const data = await getAllPayments();
         setPayments(data);
-        setFilteredPayments(data.filter(payment => payment.status === 'pending'));
-      } catch (error) {
+        setFilteredPayments(data);
+      } catch (error: any) {
         console.error('Error fetching payments:', error);
-        toast.error('পেমেন্ট তালিকা লোড করতে সমস্যা হয়েছে।');
+        setError(error.message || 'পেমেন্ট তালিকা লোড করতে সমস্যা হয়েছে।');
+        toast.error(error.message || 'পেমেন্ট তালিকা লোড করতে সমস্যা হয়েছে।');
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchPayments();
   }, []);
-  
+
   useEffect(() => {
-    let result = payments;
-    
-    // Apply status filter
-    if (filter !== 'all') {
-      result = result.filter(payment => payment.status === filter);
-    }
-    
-    // Apply search filter
-    if (searchTerm) {
+    const result = payments.filter(payment => {
       const term = searchTerm.toLowerCase();
-      result = result.filter(payment => 
-        payment.userId.toLowerCase().includes(term) || 
-        payment.transactionId.toLowerCase().includes(term) || 
-        payment.paymentNumber.toLowerCase().includes(term)
+      return (
+        (payment.userName?.toLowerCase().includes(term) ?? false) ||
+        (payment.tran_id?.toLowerCase().includes(term) ?? false) ||
+        (payment.val_id?.toLowerCase().includes(term) ?? false) ||
+        (payment.bank_tran_id?.toLowerCase().includes(term) ?? false) ||
+        (payment.card_issuer?.toLowerCase().includes(term) ?? false)
+      );
+    });
+    setFilteredPayments(result);
+  }, [searchTerm, payments]);
+
+  const handleStatusChange = async (paymentId: string, newStatus: 'pending' | 'verified' | 'completed' | 'failed' | 'cancelled') => {
+    if (!userToken) {
+      toast.error('অনুগ্রহ করে লগইন করুন।');
+      return;
+    }
+
+    const success = await updatePaymentStatus(paymentId, newStatus, userToken);
+    if (success) {
+      setPayments(prev =>
+        prev.map(payment =>
+          payment.id === paymentId ? { ...payment, status: newStatus } : payment
+        )
+      );
+      setFilteredPayments(prev =>
+        prev.map(payment =>
+          payment.id === paymentId ? { ...payment, status: newStatus } : payment
+        )
       );
     }
-    
-    setFilteredPayments(result);
-  }, [filter, searchTerm, payments]);
-  
-  const handleVerify = async (paymentId: string, userId: string) => {
-    try {
-      const success = await verifyPayment(paymentId, userId);
-      if (success) {
-        // Update local state
-        setPayments(prevPayments => prevPayments.map(payment => 
-          payment.id === paymentId ? { ...payment, status: 'verified', verifiedAt: new Date() } : payment
-        ));
-      }
-    } catch (error) {
-      console.error('Error verifying payment:', error);
-    }
   };
-  
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'verified':
-        return (
-          <Badge className="bg-green-500">
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            যাচাই হয়েছে
-          </Badge>
-        );
-      case 'pending':
-        return (
-          <Badge variant="outline" className="border-yellow-500 text-yellow-600">
-            <Clock className="h-3 w-3 mr-1" />
-            অপেক্ষমান
-          </Badge>
-        );
-      case 'failed':
-        return (
-          <Badge variant="destructive">
-            <AlertCircle className="h-3 w-3 mr-1" />
-            ব্যর্থ হয়েছে
-          </Badge>
-        );
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
-  
+
+  const totalPayments = payments.length;
+  const completedPayments = payments.filter(p => p.status === 'completed').length;
+  const pendingPayments = payments.filter(p => p.status === 'pending').length;
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-8">লোড হচ্ছে...</div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold mb-1">পেমেন্ট যাচাই</h1>
-          <p className="text-muted-foreground">
-            সদস্যদের পেমেন্ট যাচাই করুন এবং অনুমোদন দিন
-          </p>
+          <h1 className="text-3xl font-bold mb-1">পেমেন্ট তালিকা</h1>
+          <p className="text-muted-foreground">সদস্যদের পেমেন্ট বিবরণ দেখুন</p>
         </div>
-        
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <DashboardCard
+            title="মোট পেমেন্ট"
+            value={totalPayments}
+            icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
+            description="সকল পেমেন্টের সংখ্যা"
+          />
+          <DashboardCard
+            title="সফল পেমেন্ট"
+            value={completedPayments}
+            icon={<CreditCard className="h-4 w-4 text-muted-foreground" />}
+            description="সম্পন্ন পেমেন্ট"
+          />
+          <DashboardCard
+            title="পেন্ডিং পেমেন্ট"
+            value={pendingPayments}
+            icon={<Clock className="h-4 w-4 text-muted-foreground" />}
+            description="অপেক্ষমাণ পেমেন্ট"
+          />
+        </div>
+
         <Card>
           <CardHeader>
-            <CardTitle>পেমেন্ট তালিকা</CardTitle>
+            <CardTitle>সকল পেমেন্ট</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="সদস্য আইডি বা ট্রানজেকশন আইডি দিয়ে খুঁজুন"
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
-              
-              <div className="flex space-x-2">
-                <Button 
-                  variant={filter === 'all' ? 'default' : 'outline'}
-                  onClick={() => setFilter('all')}
-                  className={filter === 'all' ? 'bg-alumni-primary hover:bg-alumni-secondary' : ''}
-                >
-                  সকল
-                </Button>
-                <Button 
-                  variant={filter === 'pending' ? 'default' : 'outline'}
-                  onClick={() => setFilter('pending')}
-                  className={filter === 'pending' ? 'bg-alumni-primary hover:bg-alumni-secondary' : ''}
-                >
-                  অপেক্ষমান
-                </Button>
-                <Button 
-                  variant={filter === 'verified' ? 'default' : 'outline'}
-                  onClick={() => setFilter('verified')}
-                  className={filter === 'verified' ? 'bg-alumni-primary hover:bg-alumni-secondary' : ''}
-                >
-                  যাচাইকৃত
-                </Button>
-                <Button 
-                  variant={filter === 'failed' ? 'default' : 'outline'}
-                  onClick={() => setFilter('failed')}
-                  className={filter === 'failed' ? 'bg-alumni-primary hover:bg-alumni-secondary' : ''}
-                >
-                  বাতিল
-                </Button>
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="নাম, ট্রানজেকশন আইডি, ভ্যালিডেশন আইডি, ব্যাংক বা কার্ড ইস্যুয়ার দিয়ে খুঁজুন"
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
             </div>
-            
-            {loading ? (
-              <div className="text-center py-8">লোড হচ্ছে...</div>
+
+            {error ? (
+              <div className="text-center py-8 text-red-600">{error}</div>
             ) : filteredPayments.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">কোনো পেমেন্ট পাওয়া যায়নি।</div>
             ) : (
@@ -167,41 +171,80 @@ const Payments = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ইউজার আইডি</TableHead>
+                      <TableHead>সদস্য নাম</TableHead>
                       <TableHead>ট্রানজেকশন আইডি</TableHead>
-                      <TableHead>মোবাইল</TableHead>
+                      <TableHead>ভ্যালিডেশন আইডি</TableHead>
+                      <TableHead>কার্ড টাইপ</TableHead>
+                      <TableHead>কার্ড ইস্যুয়ার</TableHead>
                       <TableHead>পরিমাণ</TableHead>
-                      <TableHead>তারিখ</TableHead>
                       <TableHead>স্ট্যাটাস</TableHead>
-                      <TableHead className="text-right">অ্যাকশন</TableHead>
+                      <TableHead>তারিখ</TableHead>
+                      {isAdmin && <TableHead>অ্যাকশন</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredPayments.map((payment) => (
                       <TableRow key={payment.id}>
-                        <TableCell className="font-medium">{payment.userId.slice(0, 8)}...</TableCell>
-                        <TableCell>{payment.transactionId}</TableCell>
-                        <TableCell>{payment.paymentNumber}</TableCell>
+                        <TableCell className="font-medium">{payment.userName || 'N/A'}</TableCell>
+                        <TableCell>{payment.tran_id || 'N/A'}</TableCell>
+                        <TableCell>{payment.val_id || 'N/A'}</TableCell>
+                        <TableCell>{payment.card_type || 'N/A'}</TableCell>
+                        <TableCell>{payment.card_issuer || 'N/A'}</TableCell>
                         <TableCell>{payment.amount} ৳</TableCell>
                         <TableCell>
-                          {payment.paymentDate instanceof Date ? payment.paymentDate.toLocaleDateString('bn-BD') : 
-                           new Date(payment.paymentDate).toLocaleDateString('bn-BD')}
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              payment.status === 'completed'
+                                ? 'bg-green-100 text-green-800'
+                                : payment.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : payment.status === 'failed'
+                                ? 'bg-red-100 text-red-800'
+                                : payment.status === 'verified'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {payment.status === 'completed'
+                              ? 'সম্পন্ন'
+                              : payment.status === 'pending'
+                              ? 'পেন্ডিং'
+                              : payment.status === 'failed'
+                              ? 'ব্যর্থ'
+                              : payment.status === 'verified'
+                              ? 'যাচাইকৃত'
+                              : 'বাতিল'}
+                          </span>
                         </TableCell>
-                        <TableCell>{getStatusBadge(payment.status)}</TableCell>
-                        <TableCell align="right">
-                          <div className="flex justify-end">
-                            {payment.status === 'pending' && (
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700" 
-                                onClick={() => handleVerify(payment.id, payment.userId)}
-                              >
-                                <CheckCircle2 className="h-4 w-4 mr-1" /> যাচাই করুন
-                              </Button>
-                            )}
-                          </div>
+                        <TableCell>
+                          {payment.createdAt instanceof Date
+                            ? payment.createdAt.toLocaleDateString('bn-BD')
+                            : 'N/A'}
                         </TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <Select
+                              onValueChange={(value) =>
+                                handleStatusChange(
+                                  payment.id,
+                                  value as 'pending' | 'verified' | 'completed' | 'failed' | 'cancelled'
+                                )
+                              }
+                              defaultValue={payment.status}
+                            >
+                              <SelectTrigger className="w-[120px]">
+                                <SelectValue placeholder="স্ট্যাটাস" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">পেন্ডিং</SelectItem>
+                                <SelectItem value="verified">যাচাইকৃত</SelectItem>
+                                <SelectItem value="completed">সম্পন্ন</SelectItem>
+                                <SelectItem value="failed">ব্যর্থ</SelectItem>
+                                <SelectItem value="cancelled">বাতিল</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>

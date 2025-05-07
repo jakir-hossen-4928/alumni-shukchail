@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -14,36 +13,47 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
-  
+  const { login, userData } = useAuth();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast.error('সবগুলি ক্ষেত্র পূরণ করুন।');
       return;
     }
-    
+
     try {
       setLoading(true);
       await login(email, password);
-      navigate('/dashboard');
+      // Do not redirect here; let useEffect handle it
     } catch (error) {
       console.error('Login error:', error);
-      // Error is already handled in the auth context
+      toast.error('লগইন ব্যর্থ হয়েছে। ইমেইল বা পাসওয়ার্ড চেক করুন।');
     } finally {
       setLoading(false);
     }
   };
-  
+
+  // Redirect based on user role after userData is available
+  useEffect(() => {
+    if (userData) {
+      if (userData.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [userData, navigate]);
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <img 
-              src="https://i.ibb.co/NgkLwVm3/shukchail-logo.jpg" 
-              alt="Shukchail Logo" 
+            <img
+              src="https://i.ibb.co/NgkLwVm3/shukchail-logo.jpg"
+              alt="Shukchail Logo"
               className="h-16"
               onError={(e) => {
                 e.currentTarget.src = '/placeholder.svg';
@@ -55,7 +65,7 @@ const Login = () => {
             আপনার অ্যাকাউন্টে লগইন করতে ইমেইল এবং পাসওয়ার্ড দিন
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -70,12 +80,12 @@ const Login = () => {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">পাসওয়ার্ড</Label>
-                <Link 
-                  to="/forgot-password" 
+                <Link
+                  to="/forgot-password"
                   className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
                 >
                   পাসওয়ার্ড ভুলে গেছেন?
@@ -91,10 +101,10 @@ const Login = () => {
                 required
               />
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
+
+            <Button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               disabled={loading}
             >
               {loading ? (
@@ -107,7 +117,7 @@ const Login = () => {
             </Button>
           </form>
         </CardContent>
-        
+
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-600">
             অ্যাকাউন্ট নেই?{' '}
